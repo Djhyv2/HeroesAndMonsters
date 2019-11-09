@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang='en'>
+
 <head>
     <title>Monsters and Heroes</title>
     <meta charset='UTF-8'>
@@ -7,9 +8,25 @@
     <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js'></script>
     <script src='https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js'></script>
     <script src='/socket.io/socket.io.js'></script>
-    <script src='client.js'></script>
+    <script src='scripts/client.js'></script>
+    <link rel='stylesheet' href='styles/styles.css'>
 </head>
-<body>
-    <h1>Home</h1>
+
+<body class='h-100 p-3'>
+        <div class='h-50'>
+
+        </div>
+        <div class='h-50 d-flex flex-column'>
+            <div class='flex-fill overflow-auto'>
+                <ul id='chatLog' class='list-group'>
+                    <li class='list-group-item'>Test Message</li>
+                </ul>
+            </div>
+            <div class='form-inline w-100'>
+                <input type='text' id='chat' class='form-control col' placeholder='Chat'>
+                <button type='button' class='btn btn-primary ml-1' onclick='send()'>Send</button>
+            </div>
+    </div>
 </body>
+
 </html>

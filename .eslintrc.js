@@ -22,5 +22,6 @@ module.exports = {
     "spaced-comment": [1,"never"],//Makes comments adjacent to // or /*
     "no-continue": [0],//Allows continue statements
     "no-console": [0],//Allows console statements
+    "linebreak-style": [1, "windows"],//Use crlf
   },
 };
