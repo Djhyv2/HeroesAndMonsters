@@ -17,12 +17,11 @@
 
         </div>
         <div class='h-50 d-flex flex-column'>
-            <div class='flex-fill overflow-auto'>
-                <ul id='chatLog' class='list-group'>
-                    <li class='list-group-item'>Test Message</li>
+            <div class='flex-fill overflow-auto border' id='chatLog'>
+                <ul id='chatLogList' class='list-group'>
                 </ul>
             </div>
-            <div class='form-inline w-100'>
+            <div class='form-inline w-100 mt-2'>
                 <input type='text' id='chat' class='form-control col' placeholder='Chat'>
                 <button type='button' class='btn btn-primary ml-1' onclick='send()'>Send</button>
             </div>

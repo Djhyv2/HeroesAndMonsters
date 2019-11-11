@@ -35,7 +35,6 @@ io.on('connection', (socket) =>
         console.log(message);
         io.sockets.emit('chatMessage', message);
     });//When client sents chat, forward to other clients
-
 });//On socket connection
 
 server.listen(port, () => console.log(`Listening on Port: ${port}`));//Run http server
