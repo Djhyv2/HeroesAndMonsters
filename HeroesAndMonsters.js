@@ -24,14 +24,21 @@ io.on('connection', (socket) =>
     clients[socket.id] = {};
     console.log(`${socket.id} Connected`);
 
+    socket.on('setName', (name) =>
+    {
+        clients[socket.id].name = name;
+        console.log(`${socket.id} set name to ${name}`);
+    });//On player set name
+
     socket.on('disconnect', () =>
     {
         delete clients[socket.id];
         console.log(`${socket.id} Disconnected`);
     });//On socket disconnect
 
-    socket.on('chatMessage', (message) =>
+    socket.on('chatMessage', (messageText) =>
     {
+        const message = `${null != clients[socket.id].name ? clients[socket.id].name : socket.id}: ${messageText}`;//Message is combination of name and message text
         console.log(message);
         io.sockets.emit('chatMessage', message);
     });//When client sents chat, forward to other clients
