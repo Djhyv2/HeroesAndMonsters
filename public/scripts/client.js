@@ -6,6 +6,8 @@ function submitName(e)
     e.preventDefault();//Prevent postback
     socket.emit('setName', $('#txtName').val());//Submit name to server
     $('#modalName').modal('hide');//Hide modal after submission
+
+    $('#modalLobby').modal('show');//Show lobby after joining
 }
 
 function sendMessage(e)
