@@ -21,6 +21,25 @@ function sendMessage(e)
     txtChat.val('');//Clear message
 }
 
+//eslint-disable-next-line no-unused-vars
+function toggleReady()
+{
+    socket.emit('lobbyReady', null);
+    const readyButton = $('#btnReady');
+    if ('Ready' === readyButton.html())
+    {
+        readyButton.html('Unready');
+        readyButton.removeClass('btn-success');
+        readyButton.addClass('btn-danger');
+    }
+    else
+    {
+        readyButton.html('Ready');
+        readyButton.addClass('btn-success');
+        readyButton.removeClass('btn-danger');
+    }//Changes button and toggles ready status
+}
+
 $().ready(() =>
 {
     $('#modalName').modal('show');//Show modal on load
@@ -31,7 +50,17 @@ $().ready(() =>
 
 socket.on('chatMessage', (message) =>
 {
-    $('#listChatLog').append($('<li></li>').addClass('list-group-item').html(message));
+    $('#listChatLog').append(Mustache.render($('#chatTemplate').html(), { message }));
     const chatLog = $('#divChatLog');
-    chatLog[0].scrollTop = chatLog[0].scrollHeight - chatLog[0].clientHeight;
+    chatLog[0].scrollTop = chatLog[0].scrollHeight - chatLog[0].clientHeight;//Scroll to bottom on new message
 });//On chat message, add to chat log
+
+socket.on('lobbyUpdate', (lobbyData) =>
+{
+    const lobby = $('#listLobby');
+    lobby.empty();
+    Object.keys(lobbyData).filter((user) => null != lobbyData[user].name).forEach((user) =>
+    {
+        lobby.append(Mustache.render($('#lobbyTemplate').html(), { name: lobbyData[user].name, ready: lobbyData[user].ready }));
+    });//Add all named users to lobby list
+});
