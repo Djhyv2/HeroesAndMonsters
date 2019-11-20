@@ -59,9 +59,10 @@ socket.on('lobbyUpdate', (lobbyData) =>
 {
     const lobby = $('#listLobby');
     lobby.empty();
+    const template = $('#lobbyTemplate').html();
     Object.keys(lobbyData).forEach((user) =>
     {
-        lobby.append(Mustache.render($('#lobbyTemplate').html(), { name: lobbyData[user].name, ready: lobbyData[user].ready }));
+        lobby.append(Mustache.render(template, { name: lobbyData[user].name, ready: lobbyData[user].ready }));
     });//Add all named users to lobby list
 });
 
@@ -70,17 +71,30 @@ socket.on('gameStart', (players) =>
     $('#modalLobby').modal('hide');//Hide lobby
     $('#lblRole').html(`You are the ${players[socket.id].team}, ${players[socket.id].role}`);
     const playersList = $('#listPlayers');
+    const template = $('#playerTemplate').html();
     Object.keys(players).forEach((player) =>
     {
         playersList.append(
             Mustache.render(
-                $('#playerTemplate').html(),
+                template,
                 {
                     name: players[player].name,
                     team: players[player].team,
-                    isRevealedTeam: ('Monster' === players[player].team && 'Monster' === players[socket.id].team) || players[player].isRevealedHero, //Monsters are revealed to eachother and heroes who have been on a quest are revealed
+                    isRevealedTeam: ('Monster' === players[player].team && 'Monster' === players[socket.id].team) || players[player].isRevealedTeam, //Monsters are revealed to eachother and heroes who have been on a quest are revealed and certain causes of death reveal a team
+                    dead: players[player].dead,
                 },
             ),
         );
     });//Add players to player list
+});
+
+socket.on('promptQuest', (clients) =>
+{
+    $('#divPlayerSelect').show();
+    const playerOptions = $('#divPlayerOptions');
+    const template = $('#playerSelectTemplate').html();
+    Object.keys(clients).forEach((client) =>
+    {
+        playerOptions.append(Mustache.render(template, { name: clients[client].name }));
+    });//Create list of player radio buttons
 });

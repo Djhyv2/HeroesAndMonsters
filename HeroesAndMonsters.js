@@ -8,9 +8,10 @@ const server = HTTP.Server(app);//Link Express to HTTP Server to allow use of So
 const io = IO(server);//Create socket.io server
 const port = 4000;
 
-const minimumPlayers = 5;
+const minimumPlayers = 1;
 const maximumPlayers = 9;
 const clients = {};
+let activePlayer = 0;
 
 app.get('/', (req, res) =>
 {
@@ -20,6 +21,10 @@ app.get('/', (req, res) =>
 function AssignRoles()
 {
     const clientKeys = Object.keys(clients);
+    for (let index = 0; clientKeys.length > index; index += 1)
+    {
+        clients[clientKeys[index]].order = index;
+    }//Set player order based on socket id
     for (let count = clientKeys.length - 1; 0 < count; count -= 1)
     {
         const index = Math.floor(Math.random() * count);
@@ -75,12 +80,16 @@ function AssignRoles()
     //Assign roles, only 5 are required
 }
 
+function StartQuest()
+{
+    io.to(Object.keys(clients).filter((client) => clients[client].order === activePlayer)[0]).emit('promptQuest', clients);
+}
 
 io.on('connection', (socket) =>
 {
     socket.on('setName', (name) =>
     {
-        clients[socket.id] = { name, ready: false };//Sets name and default of not ready
+        clients[socket.id] = { name, ready: false, dead: false };//Sets name and default of not ready and not dead
         console.log(`${socket.id} set name to ${name}`);
         io.sockets.emit('lobbyUpdate', clients);//Update all clients that new user joined
     });//On player set name
@@ -109,6 +118,7 @@ io.on('connection', (socket) =>
         {
             AssignRoles();
             io.sockets.emit('gameStart', clients);
+            StartQuest();
         }//If all players ready and between 5-9 players, start the game
         else
         {

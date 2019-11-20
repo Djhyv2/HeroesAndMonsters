@@ -8,7 +8,7 @@
     <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js'></script>
     <script src='https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js'></script>
     <script src='/socket.io/socket.io.js'></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.1.0/mustache.js"></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.1.0/mustache.js'></script>
     <script src='scripts/client.js'></script>
     <link rel='stylesheet' href='styles/styles.css'>
 </head>
@@ -58,18 +58,31 @@
         </div>
     </div>
 
-    <div class='h-50'>
-        <div class='row'>
+    <div class='h-50 mb-2'>
+        <div class='row m-auto'>
             <div class='col-md-4 col-sm-12'>
                 <h4 id='lblRole'></h4>
                 <a data-toggle='collapse' href='#listPlayers'>
                     <li class='list-group-item w-100 list-group-item-dark'>Player List:</li>
                 </a>
                 <script id='playerTemplate' type='template'>
-                    <li class='list-group-item'>{{name}} {{#isRevealedTeam}}({{team}}){{/isRevealedTeam}}</li>
+                    <li class='list-group-item'>{{#dead}}<s>{{/dead}}{{name}} {{#isRevealedTeam}}({{team}}){{/isRevealedTeam}}{{#dead}}</s>{{/dead}}</li>
                 </script>
                 <ul class='list-group w-100 collapse show' id='listPlayers'>
                 </ul>
+            </div>
+            <div class='col-md-8 col-sm-12 hidden border' id='divPlayerSelect'>
+                <script id='playerSelectTemplate' type='template'>
+                    <div class='form-check'>
+                        <input class='form-check-input' type='radio' name='selectedPlayer' value='{{name}}'>
+                        <label class='form-check-label'>{{name}}</label>
+                    </div>
+                </script>
+                <form>
+                    <div id='divPlayerOptions'>
+
+                    </div>
+                </form>
             </div>
         </div>
     </div>

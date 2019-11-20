@@ -15,11 +15,12 @@ The game will continue until there are either no heroes or no monsters left aliv
 Each turn conists of the following:
 - Reveal any players who were killed on the last turn
 - A period of deliberation
-- A vote to send a hero on a quest to kill a target
-    - This requires atleast half of all players vote in favor
-    - One of the people who voted for the quest must reveal they are a hero and agree to go on the quest.
+- The active player choses a target for a quest
+- A vote happens to send a hero on a quest to kill that target
+    - This requires atleast half of all players vote in favor to pass
+    - If the vote passes, one of the people who voted for the quest must reveal they are a hero and agree to go on the quest.
     - If both conditions are met the target is killed.
-    - A player killed by a quest has their role revealed.
+    - A player killed by a quest has their team revealed.
 - Odysseus will act
 - Helen will act
 - Achilles will act
@@ -27,6 +28,7 @@ Each turn conists of the following:
 - Polyphemus will act
 - Medusa will act
 - Tiersias will act
+- The active player will rotate
 
 # Setup
 
@@ -79,19 +81,19 @@ Each turn conists of the following:
 
 - Once per turn can eat a player, killing them.
 - Everyone will be notified if a player is killed by the minotaur.
-- A player killed by the Minotaur does not have their role revealed.
+- A player killed by the Minotaur does not have their team revealed.
 
 ### Polyphemus
 
 - Once per turn can throw a rock, killing a player.
 - Everyone will be notified if a player is killed by a rock.
-- A player killed by Polyphemus has their role revealed.
+- A player killed by Polyphemus has their team revealed.
 
 ### Medusa
 
 - Once per turn can turn a player into stone, killing them.
 - Everyone will be notified if a player is turned into stone.
-- A player killed by Medusa has their role revealed.
+- A player killed by Medusa has their team revealed.
 
 ## Civilians
 
