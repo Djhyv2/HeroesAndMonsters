@@ -65,6 +65,7 @@ Each turn conists of the following:
 ### Odysseus
 
 - Once per turn can get another character drunk, causing them to skip their turn.
+- Odysseus cannot get Tiersias drunk.
 - The target will be notified if they were were gotten drunk.
 
 ### Achilles
@@ -82,7 +83,7 @@ Each turn conists of the following:
 
 - Once per turn can eat a player, killing them.
 - Everyone will be notified if a player is killed by the minotaur.
-- A player killed by the Minotaur does not have their team revealed.
+- A player killed by the Minotaur has their team revealed.
 
 ### Polyphemus
 

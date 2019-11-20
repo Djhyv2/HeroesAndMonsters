@@ -8,7 +8,7 @@ const server = HTTP.Server(app);//Link Express to HTTP Server to allow use of So
 const io = IO(server);//Create socket.io server
 const port = 4000;
 
-const minimumPlayers = 3;
+const minimumPlayers = 5;
 const maximumPlayers = 9;
 let clients = {};
 let gameStarted = false;
@@ -121,6 +121,145 @@ function nextPlayer()
     }
 }
 
+function restartGame(message)
+{
+    io.sockets.emit('gameEnding', message);
+    gameStarted = false;
+    clients = {};
+    activePlayer = 0;
+    voteTarget = null;
+}
+
+function checkVictory()
+{
+    const clientKeys = Object.keys(clients);
+    if (0 === clientKeys.filter((client) => false === clients[client].dead && 'Hero' === clients[client].team).length)
+    {
+        restartGame('Monsters Win! Please Refresh.');
+        return;
+    }//If no heroes alive, monsters win
+    if (0 === clientKeys.filter((client) => false === clients[client].dead && 'Monster' === clients[client].team).length)
+    {
+        restartGame('Heroes Win! Please Refresh.');
+    }//If no monsters alive, heroes win
+}
+
+function nextTurn()
+{
+    Object.keys(clients).forEach((client) =>
+    {
+        delete clients[client].revealVote;
+        delete clients[client].drunk;
+        delete clients[client].seduced;
+        delete clients[client].defended;
+        delete clients[client].acted;
+    });
+    resetVotes();
+    nextPlayer();
+    startQuest();
+}
+
+function startTiersias()
+{
+    const tiresias = Object.keys(clients).filter((client) => false === clients[client].dead && 'Tiresias' === clients[client].role);
+    if (1 === tiresias.length)
+    {
+        io.to(tiresias[0]).emit('promptTiresias', clients);
+    }
+    else
+    {
+        nextTurn();
+    }
+}
+
+function startMonsters()
+{
+    const monsters = Object.keys(clients).filter((client) => false === clients[client].dead && 'Monster' === clients[client].team);
+    monsters.forEach((monster) =>
+    {
+        if (true === clients[monster].drunk)
+        {
+            io.to(monster).emit('gameMessage', 'You are drunk and unable to eat anyone');
+            clients[monsters].acted = true;
+        }//can't act if drunk
+        else if (true === clients[monster].seduced)
+        {
+            const helen = Object.keys(clients).filter((client) => 'Helen' === clients[client].role)[0];
+            io.to(monster).emit('gameMessage', 'You are seduced into defending Helen');
+            if (true === clients[helen].defended)
+            {
+                sendGameMessage(`Achilles successfully defended ${clients[helen].name}`);
+                clients[monster].acted = true;
+            }//helen lives if defended
+            else
+            {
+                clients[helen].dead = true;
+                clients[helen].isRevealedTeam = true;
+                sendGameMessage(`The ${clients[helen].team}, ${clients[helen].name} is killed by monsters.`);
+                io.sockets.emit('updatePlayerList', clients);
+                checkVictory();
+            }
+        }//must attack helen if seduced
+        else
+        {
+            io.to(monster).emit('promptMonster', clients);
+        }
+    });
+    if (0 === monsters.length || (monsters.filter((monster) => true === clients[monster].acted).length === monsters.length))
+    {
+        startTiersias();
+    }//If no monsters or none can make choice
+}
+
+function startAchilles()
+{
+    const achilles = Object.keys(clients).filter((client) => false === clients[client].dead && 'Achilles' === clients[client].role);
+    if (1 === achilles.length)
+    {
+        if (true === clients[achilles[0]].drunk)
+        {
+            io.to(achilles[0]).emit('gameMessage', 'You are drunk and unable to defend anyone');
+            startMonsters();
+        }
+        else if (true === clients[achilles[0]].seduced)
+        {
+            const helen = Object.keys(clients).filter((client) => 'Helen' === clients[client].role);
+            io.to(achilles[0]).emit('gameMessage', 'You are seduced into defending Helen');
+            clients[helen].defended = true;
+            startMonsters();
+        }
+        else
+        {
+            io.to(achilles[0]).emit('promptAchilles', clients);
+        }
+    }
+    else
+    {
+        startMonsters();
+    }
+}
+
+function startHelen()
+{
+    const helen = Object.keys(clients).filter((client) => false === clients[client].dead && 'Helen' === clients[client].role);
+    if (1 === helen.length)
+    {
+        if (true === clients[helen[0]].drunk)
+        {
+            io.to(helen[0]).emit('gameMessage', 'You are drunk and unable to seduce anyone');
+            startAchilles();
+        }
+        else
+        {
+            io.to(helen[0]).emit('promptHelen', clients);
+        }
+    }
+    else
+    {
+        startAchilles();
+    }
+}
+
 function startOdysseus()
 {
     const odysseus = Object.keys(clients).filter((client) => false === clients[client].dead && 'Odysseus' === clients[client].role);
@@ -190,30 +329,6 @@ function tallyReveal()
         sendGameMessage('No hero volunteered to go on quest');
         startOdysseus();//Odysseus is next character to act
     }//If all heroes declined
-}
-
-
-function restartGame(message)
-{
-    io.sockets.emit('gameEnding', message);
-    gameStarted = false;
-    clients = {};
-    activePlayer = 0;
-    voteTarget = null;
-}
-
-function checkVictory()
-{
-    const clientKeys = Object.keys(clients);
-    if (0 === clientKeys.filter((client) => false === clients[client].dead && 'Hero' === clients[client].team).length)
-    {
-        restartGame('Monsters Win! Please Refresh.');
-        return;
-    }//If no heroes alive, monsters win
-    if (0 === clientKeys.filter((client) => false === clients[client].dead && 'Monster' === clients[client].team).length)
-    {
-        restartGame('Heroes Win! Please Refresh.');
-    }//If no monsters alive, heroes win
 }
 
 function executeQuest(hero)
@@ -337,6 +452,7 @@ io.on('connection', (socket) =>
         if ('None' !== target)
         {
             console.log(`${clients[socket.id].name} got ${clients[target].name} drunk`);
+            io.to(target).emit('gameMessage', 'You are drunk');
             clients[target].drunk = true;
         }//Gets target drunk
         else
@@ -344,6 +460,63 @@ io.on('connection', (socket) =>
             console.log(`${clients[socket.id].name} got nobody drunk`);
         }
         startHelen();
+    });
+
+    socket.on('seduceTarget', (target) =>
+    {
+        if ('None' !== target)
+        {
+            console.log(`${clients[socket.id].name} seduced ${clients[target].name}`);
+            io.to(target).emit('gameMessage', 'You are seduced by Helen');
+            clients[target].seduced = true;
+        }//seduces
+        else
+        {
+            console.log(`${clients[socket.id].name} seduced nobody`);
+        }
+        startAchilles();
+    });
+
+    socket.on('defendTarget', (target) =>
+    {
+        if ('None' !== target && target !== socket.id)
+        {
+            console.log(`${clients[socket.id].name} defended ${clients[target].name}`);
+            clients[target].defended = true;
+        }//seduces
+        else
+        {
+            console.log(`${clients[socket.id].name} defended nobody`);
+        }
+        startMonsters();
+    });
+
+    socket.on('killTarget', (target) =>
+    {
+        if (true === clients[target].defended)
+        {
+            sendGameMessage(`Achilles successfully defended ${clients[target].name}`);
+        }
+        else
+        {
+            clients[target].dead = true;
+            clients[target].isRevealedTeam = true;
+            sendGameMessage(`The ${clients[target].team}, ${clients[target].name} is killed by monsters.`);
+            io.sockets.emit('updatePlayerList', clients);
+            checkVictory();
+        }
+        clients[socket.id].acted = true;
+        const monsters = Object.keys(clients).filter((client) => false === clients[client].dead && 'Monster' === clients[client].team);
+        if (monsters.filter((monster) => true === clients[monster].acted).length === monsters.length)
+        {
+            startTiersias();
+        }//If all monsters acted
+    });
+
+    socket.on('prophecyTarget', (target) =>
+    {
+        io.to(socket.id).emit('gameMessage', `${clients[target].name} is ${clients[target].role}`);
+        nextTurn();
     });
 });//On socket connection
 
