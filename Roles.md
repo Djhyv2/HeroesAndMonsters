@@ -17,10 +17,11 @@ Each turn conists of the following:
 - A period of deliberation
 - The active player choses a target for a quest
 - A vote happens to send a hero on a quest to kill that target
-    - This requires atleast half of all players vote in favor to pass
-    - If the vote passes, one of the people who voted for the quest must reveal they are a hero and agree to go on the quest.
+    - This requires atleast half of all players vote in favor to pass. 
+    - If the vote passes or ties, one of the people who voted for the quest must reveal they are a hero and agree to go on the quest.
     - If both conditions are met the target is killed.
     - A player killed by a quest has their team revealed.
+    - If the vote fails, move to the next active player and keep selecting targets and voting until a quest is approved, a hero doesn't have to reveal themself to proceed.
 - Odysseus will act
 - Helen will act
 - Achilles will act

@@ -8,10 +8,11 @@ const server = HTTP.Server(app);//Link Express to HTTP Server to allow use of So
 const io = IO(server);//Create socket.io server
 const port = 4000;
 
-const minimumPlayers = 1;
+const minimumPlayers = 2;
 const maximumPlayers = 9;
 const clients = {};
 let activePlayer = 0;
+let voteTarget;
 
 app.get('/', (req, res) =>
 {
@@ -20,7 +21,7 @@ app.get('/', (req, res) =>
 
 function AssignRoles()
 {
-    const clientKeys = Object.keys(clients);
+    const clientKeys = Object.keys(clients).sort();
     for (let index = 0; clientKeys.length > index; index += 1)
     {
         clients[clientKeys[index]].order = index;
@@ -80,9 +81,80 @@ function AssignRoles()
     //Assign roles, only 5 are required
 }
 
-function StartQuest()
+function sendGameMessage(message)
 {
-    io.to(Object.keys(clients).filter((client) => clients[client].order === activePlayer)[0]).emit('promptQuest', clients);
+    console.log(message);
+    io.sockets.emit('gameMessage', message);
+}
+
+function startQuest()
+{
+    const activeSocketID = Object.keys(clients).filter((client) => clients[client].order === activePlayer)[0];
+    sendGameMessage(`${clients[activeSocketID].name} is choosing the next target for a quest`);
+    io.to(activeSocketID).emit('promptQuest', clients);
+}
+
+function resetVotes()
+{
+    Object.keys(clients).forEach((client) =>
+    {
+        delete clients[client].vote;
+    });//Clears vote from each player
+    voteTarget = null;
+}
+
+function nextPlayer()
+{
+    while (-1 !== activePlayer)
+    {
+        activePlayer += 1;
+        const clientKeys = Object.keys(clients);
+        activePlayer %= clientKeys.length;
+        for (let i = 0; clientKeys.length > i; i += 1)
+        {
+            if (activePlayer === clients[clientKeys[i]].order && false === clients[clientKeys[i]].dead)
+            {
+                return;
+            }
+        }
+    }
+
+}
+
+function tallyVotes()
+{
+    const clientKeys = Object.keys(clients);
+    const votesCast = clientKeys.filter((client) => null != clients[client].vote).length;
+    const playersAlive = clientKeys.filter((client) => false === clients[client].dead).length;
+    if (playersAlive !== votesCast)
+    {
+        return;
+    }//Only proceed if all votes cast
+    const yayVotes = clientKeys.filter((client) => true === clients[client].vote).length;
+    const nayVotes = playersAlive - yayVotes;
+    if (yayVotes >= nayVotes)
+    {
+        sendGameMessage(`Quest to slay ${clients[voteTarget].name} passes on a vote of ${yayVotes} to ${nayVotes}`);
+        const possibleHeroes = clientKeys.filter((client) => 'Hero' === clients[client].team && false === clients[client].dead && true === clients[client].vote);
+        if (0 !== possibleHeroes.length)
+        {
+            possibleHeroes.forEach((client) =>
+            {
+                io.to(client).emit('askReveal', null);
+            });//Asks living heroes who voted for quest to reveal themselves
+        }
+        else
+        {
+
+        }
+    }
+    else
+    {
+        sendGameMessage(`Quest to slay ${clients[voteTarget].name} fails on a vote of ${yayVotes} to ${nayVotes}`);
+        resetVotes();
+        nextPlayer();
+        startQuest();//Will clear current vote, move to next player, and repeat
+    }
 }
 
 io.on('connection', (socket) =>
@@ -118,7 +190,7 @@ io.on('connection', (socket) =>
         {
             AssignRoles();
             io.sockets.emit('gameStart', clients);
-            StartQuest();
+            startQuest();
         }//If all players ready and between 5-9 players, start the game
         else
         {
@@ -132,6 +204,28 @@ io.on('connection', (socket) =>
         console.log(message);
         io.sockets.emit('chatMessage', message);
     });//When client sents chat, forward to other clients
+
+    socket.on('gameMessage', (message) =>
+    {
+        sendGameMessage(message);
+    });//When client sents message, forward to other clients
+
+    socket.on('questTarget', (target) =>
+    {
+        sendGameMessage(`${clients[socket.id].name} proposes a quest to slay ${clients[target].name}`);
+        voteTarget = target;
+        Object.keys(clients).filter((client) => false === clients[client].dead).forEach((client) =>
+        {
+            io.to(client).emit('startVote', clients[target].name);
+        });//Only living players may vote
+    });//When active player selects target for quest
+
+    socket.on('voteResult', (result) =>
+    {
+        sendGameMessage(`${clients[socket.id].name} votes to ${false === result ? 'not ' : ''} slay ${clients[voteTarget].name}`);
+        clients[socket.id].vote = result;
+        tallyVotes();
+    });
 });//On socket connection
 
 server.listen(port, () => console.log(`Listening on Port: ${port}`));//Run http server

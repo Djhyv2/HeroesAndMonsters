@@ -48,12 +48,22 @@ $().ready(() =>
     $('#formChat').submit((e) => sendMessage(e));//Handle chat submission
 });
 
-socket.on('chatMessage', (message) =>
+function addLog(message)
 {
     $('#listChatLog').append(Mustache.render($('#chatTemplate').html(), { message }));
     const chatLog = $('#divChatLog');
     chatLog[0].scrollTop = chatLog[0].scrollHeight - chatLog[0].clientHeight;//Scroll to bottom on new message
+}
+
+socket.on('chatMessage', (message) =>
+{
+    addLog(message);
 });//On chat message, add to chat log
+
+socket.on('gameMessage', (message) =>
+{
+    addLog(message);
+});//On game message, add to log
 
 socket.on('lobbyUpdate', (lobbyData) =>
 {
@@ -66,11 +76,10 @@ socket.on('lobbyUpdate', (lobbyData) =>
     });//Add all named users to lobby list
 });
 
-socket.on('gameStart', (players) =>
+function updatePlayerList(players)
 {
-    $('#modalLobby').modal('hide');//Hide lobby
-    $('#lblRole').html(`You are the ${players[socket.id].team}, ${players[socket.id].role}`);
     const playersList = $('#listPlayers');
+    playersList.empty();
     const template = $('#playerTemplate').html();
     Object.keys(players).forEach((player) =>
     {
@@ -86,15 +95,54 @@ socket.on('gameStart', (players) =>
             ),
         );
     });//Add players to player list
+}
+
+socket.on('gameStart', (players) =>
+{
+    $('#modalLobby').modal('hide');//Hide lobby
+    $('#lblRole').html(`You are the ${players[socket.id].team}, ${players[socket.id].role}`);
+    updatePlayerList(players);
 });
 
-socket.on('promptQuest', (clients) =>
+function activatePlayerSelect(clients, addNone)
 {
     $('#divPlayerSelect').show();
     const playerOptions = $('#divPlayerOptions');
+    playerOptions.empty();
     const template = $('#playerSelectTemplate').html();
-    Object.keys(clients).forEach((client) =>
+    Object.keys(clients).filter((client) => false === clients[client].dead).forEach((client) =>
     {
-        playerOptions.append(Mustache.render(template, { name: clients[client].name }));
+        playerOptions.append(Mustache.render(template, { name: clients[client].name, id: client }));
     });//Create list of player radio buttons
+    if (true === addNone)
+    {
+        playerOptions.append(Mustache.render(template, { name: 'None', id: -1 }));
+    }//Add option for no choice if flag set
+}
+
+function sendQuest(e)
+{
+    e.preventDefault();
+    socket.emit('questTarget', $('input[name="selectedPlayer"]:checked').val());//Sends targeted player name to server
+    $('#divPlayerSelect').hide();
+}
+
+socket.on('promptQuest', (clients) =>
+{
+    activatePlayerSelect(clients, false);
+    $('#formPlayerSelect').unbind().submit((e) => sendQuest(e));
+});//Will turn on player selection form and bind form to quest
+
+function vote(result)
+{
+    $('#divVote').hide();
+    socket.emit('voteResult', result);
+}
+
+socket.on('startVote', (target) =>
+{
+    $('#divVote').show();
+    $('#btnVoteYay').unbind().on('click', () => vote(true));
+    $('#btnVoteNay').unbind().on('click', () => vote(false));
+    $('#lblVoteTarget').html(`Vote to send a quest to slay ${target}`);
 });

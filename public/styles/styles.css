@@ -1,9 +1,9 @@
-html
-{
-    height: 100vh;
-}
-
 .hidden
 {
     display: none;
+}
+
+#divChatLog
+{
+    height: 60vh;
 }
