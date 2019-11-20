@@ -59,8 +59,28 @@ socket.on('lobbyUpdate', (lobbyData) =>
 {
     const lobby = $('#listLobby');
     lobby.empty();
-    Object.keys(lobbyData).filter((user) => null != lobbyData[user].name).forEach((user) =>
+    Object.keys(lobbyData).forEach((user) =>
     {
         lobby.append(Mustache.render($('#lobbyTemplate').html(), { name: lobbyData[user].name, ready: lobbyData[user].ready }));
     });//Add all named users to lobby list
+});
+
+socket.on('gameStart', (players) =>
+{
+    $('#modalLobby').modal('hide');//Hide lobby
+    $('#lblRole').html(`You are the ${players[socket.id].team}, ${players[socket.id].role}`);
+    const playersList = $('#listPlayers');
+    Object.keys(players).forEach((player) =>
+    {
+        playersList.append(
+            Mustache.render(
+                $('#playerTemplate').html(),
+                {
+                    name: players[player].name,
+                    team: players[player].team,
+                    isRevealedTeam: ('Monster' === players[player].team && 'Monster' === players[socket.id].team) || players[player].isRevealedHero, //Monsters are revealed to eachother and heroes who have been on a quest are revealed
+                },
+            ),
+        );
+    });//Add players to player list
 });
