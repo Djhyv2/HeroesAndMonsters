@@ -8,9 +8,10 @@ const server = HTTP.Server(app);//Link Express to HTTP Server to allow use of So
 const io = IO(server);//Create socket.io server
 const port = 4000;
 
-const minimumPlayers = 2;
+const minimumPlayers = 3;
 const maximumPlayers = 9;
-const clients = {};
+let clients = {};
+let gameStarted = false;
 let activePlayer = 0;
 let voteTarget;
 
@@ -118,7 +119,19 @@ function nextPlayer()
             }
         }
     }
+}
 
+function startOdysseus()
+{
+    const odysseus = Object.keys(clients).filter((client) => false === clients[client].dead && 'Odysseus' === clients[client].role);
+    if (1 === odysseus.length)
+    {
+        io.to(odysseus[0]).emit('promptOdysseus', clients);
+    }
+    else
+    {
+        startHelen();
+    }
 }
 
 function tallyVotes()
@@ -140,13 +153,13 @@ function tallyVotes()
         {
             possibleHeroes.forEach((client) =>
             {
-                io.to(client).emit('askReveal', null);
+                io.to(client).emit('askReveal', clients[voteTarget].name);
             });//Asks living heroes who voted for quest to reveal themselves
         }
         else
         {
-
-        }
+            startOdysseus();
+        }//If no potential heroes move on
     }
     else
     {
@@ -157,19 +170,97 @@ function tallyVotes()
     }
 }
 
+function clearRevealVotes()
+{
+    resetVotes();
+    Object.keys(clients).forEach((client) =>
+    {
+        delete clients[client].revealVote;
+    });//Clears vote from each player
+}
+
+function tallyReveal()
+{
+    const clientKeys = Object.keys(clients);
+    const votesCast = clientKeys.filter((client) => null != clients[client].revealVote).length;
+    const heroesOnQuest = clientKeys.filter((client) => 'Hero' === clients[client].team && false === clients[client].dead && true === clients[client].vote).length;
+    if (votesCast === heroesOnQuest)
+    {
+        clearRevealVotes();
+        sendGameMessage('No hero volunteered to go on quest');
+        startOdysseus();//Odysseus is next character to act
+    }//If all heroes declined
+}
+
+
+function restartGame(message)
+{
+    io.sockets.emit('gameEnding', message);
+    gameStarted = false;
+    clients = {};
+    activePlayer = 0;
+    voteTarget = null;
+}
+
+function checkVictory()
+{
+    const clientKeys = Object.keys(clients);
+    if (0 === clientKeys.filter((client) => false === clients[client].dead && 'Hero' === clients[client].team).length)
+    {
+        restartGame('Monsters Win! Please Refresh.');
+        return;
+    }//If no heroes alive, monsters win
+    if (0 === clientKeys.filter((client) => false === clients[client].dead && 'Monster' === clients[client].team).length)
+    {
+        restartGame('Heroes Win! Please Refresh.');
+    }//If no monsters alive, heroes win
+}
+
+function executeQuest(hero)
+{
+    io.sockets.emit('clearAskReveal', null);
+    clients[hero].isRevealedTeam = true;
+    clients[voteTarget].dead = true;
+    clients[voteTarget].isRevealedTeam = true;
+    //Reveal hero and kill target
+    sendGameMessage(`${clients[hero].name} slays the ${clients[voteTarget].team}, ${clients[voteTarget].name}`);
+    io.sockets.emit('updatePlayerList', clients);
+    clearRevealVotes();
+    checkVictory();
+    startOdysseus();
+}
+
 io.on('connection', (socket) =>
 {
     socket.on('setName', (name) =>
     {
-        clients[socket.id] = { name, ready: false, dead: false };//Sets name and default of not ready and not dead
-        console.log(`${socket.id} set name to ${name}`);
-        io.sockets.emit('lobbyUpdate', clients);//Update all clients that new user joined
+        if (false === gameStarted)
+        {
+            clients[socket.id] = { name, ready: false, dead: false };//Sets name and default of not ready and not dead
+            console.log(`${socket.id} set name to ${name}`);
+            io.sockets.emit('lobbyUpdate', clients);//Update all clients that new user joined
+        }//Players can only join if game not in progress
+        else
+        {
+            io.to(socket.id).emit('gameInProgress', null);
+        }
     });//On player set name
 
     socket.on('disconnect', () =>
     {
-        delete clients[socket.id];
         console.log(`${socket.id} Disconnected`);
+        sendGameMessage(`${null != clients[socket.id] ? clients[socket.id].name : 'Player'} Disconnected`);
+        if (true === gameStarted && false === clients[socket.id].dead)
+        {
+            restartGame('Game Ending, Please Refresh');
+            return;
+        }//Restart game if living player leaves
+        delete clients[socket.id];
+        if (true === gameStarted && 0 === Object.keys(clients).length)
+        {
+            restartGame('Game Ending, Please Refresh');
+            return;
+        }//Restart game if last player leaves
         io.sockets.emit('lobbyUpdate', clients);//Update all clients that user left
     });//On socket disconnect
 
@@ -190,6 +281,7 @@ io.on('connection', (socket) =>
         {
             AssignRoles();
             io.sockets.emit('gameStart', clients);
+            gameStarted = true;
             startQuest();
         }//If all players ready and between 5-9 players, start the game
         else
@@ -225,6 +317,33 @@ io.on('connection', (socket) =>
         sendGameMessage(`${clients[socket.id].name} votes to ${false === result ? 'not ' : ''} slay ${clients[voteTarget].name}`);
         clients[socket.id].vote = result;
         tallyVotes();
+    });//When a player votes for a quest
+
+    socket.on('revealResult', (result) =>
+    {
+        clients[socket.id].revealVote = result;
+        if (true === result)
+        {
+            executeQuest(socket.id);
+        }//If hero agreed, reveal and kill target
+        else
+        {
+            tallyReveal();
+        }//Else check if all heroes declined
+    });
+
+    socket.on('drunkTarget', (target) =>
+    {
+        if ('None' !== target)
+        {
+            console.log(`${clients[socket.id].name} got ${clients[target].name} drunk`);
+            clients[target].drunk = true;
+        }//Gets target drunk
+        else
+        {
+            console.log(`${clients[socket.id].name} got nobody drunk`);
+        }
+        startHelen();
     });
 });//On socket connection
 

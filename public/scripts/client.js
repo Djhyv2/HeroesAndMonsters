@@ -1,6 +1,11 @@
 //eslint-disable-next-line no-undef
 const socket = io();//Connect to serverside socket
 
+window.addEventListener('beforeunload', (e) =>
+{
+    e.returnValue = 'Are you sure you want to exit?';
+});//Ask for confirmation before leaving
+
 function submitName(e)
 {
     e.preventDefault();//Prevent postback
@@ -97,6 +102,18 @@ function updatePlayerList(players)
     });//Add players to player list
 }
 
+socket.on('gameInProgress', () =>
+{
+    $('#modalLobby').modal('hide');
+    $('#modalInProgress').modal('show');
+});//Show error if game in progress
+
+socket.on('gameEnding', (message) =>
+{
+    $('#modalEnding').modal('show');
+    $('#lblEnding').html(message);
+});
+
 socket.on('gameStart', (players) =>
 {
     $('#modalLobby').modal('hide');//Hide lobby
@@ -104,9 +121,15 @@ socket.on('gameStart', (players) =>
     updatePlayerList(players);
 });
 
-function activatePlayerSelect(clients, addNone)
+socket.on('updatePlayerList', (players) =>
+{
+    updatePlayerList(players);
+});
+
+function activatePlayerSelect(clients, addNone, message)
 {
     $('#divPlayerSelect').show();
+    $('#lblPlayerSelect').html(message);
     const playerOptions = $('#divPlayerOptions');
     playerOptions.empty();
     const template = $('#playerSelectTemplate').html();
@@ -116,7 +139,7 @@ function activatePlayerSelect(clients, addNone)
     });//Create list of player radio buttons
     if (true === addNone)
     {
-        playerOptions.append(Mustache.render(template, { name: 'None', id: -1 }));
+        playerOptions.append(Mustache.render(template, { name: 'None', id: 'None' }));
     }//Add option for no choice if flag set
 }
 
@@ -129,7 +152,7 @@ function sendQuest(e)
 
 socket.on('promptQuest', (clients) =>
 {
-    activatePlayerSelect(clients, false);
+    activatePlayerSelect(clients, false, 'Choose Quest Target:');
     $('#formPlayerSelect').unbind().submit((e) => sendQuest(e));
 });//Will turn on player selection form and bind form to quest
 
@@ -137,7 +160,7 @@ function vote(result)
 {
     $('#divVote').hide();
     socket.emit('voteResult', result);
-}
+}//Player votes on quest
 
 socket.on('startVote', (target) =>
 {
@@ -145,4 +168,36 @@ socket.on('startVote', (target) =>
     $('#btnVoteYay').unbind().on('click', () => vote(true));
     $('#btnVoteNay').unbind().on('click', () => vote(false));
     $('#lblVoteTarget').html(`Vote to send a quest to slay ${target}`);
+});//When vote starts, show buttons
+
+function reveal(result)
+{
+    $('#divVote').hide();
+    socket.emit('revealResult', result);
+}//Player decided whether to reveal themself
+
+socket.on('askReveal', (target) =>
+{
+    $('#divVote').show();
+    $('#btnVoteYay').unbind().on('click', () => reveal(true));
+    $('#btnVoteNay').unbind().on('click', () => reveal(false));
+    $('#lblVoteTarget').html(`Reveal yourself to go on a quest to slay ${target}`);
+});//Ask player to reveal themself to execute quest
+
+socket.on('clearAskReveal', () =>
+{
+    $('#divVote').hide();
+});//Clears div if another hero volunteered
+
+function sendDrunk(e)
+{
+    e.preventDefault();
+    socket.emit('drunkTarget', $('input[name="selectedPlayer"]:checked').val());//Sends targeted player name to server
+    $('#divPlayerSelect').hide();
+}
+
+socket.on('promptOdysseus', (clients) =>
+{
+    activatePlayerSelect(clients, true, 'Select a player to get drunk and skip their turn.');
+    $('#formPlayerSelect').unbind().submit((e) => sendDrunk(e));
 });

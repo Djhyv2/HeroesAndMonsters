@@ -69,7 +69,7 @@ Each turn conists of the following:
 
 ### Achilles
 
-- Once per turn can defend a player, including themself, using the Armor of Achilles, preventing them from dying.
+- Once per turn can defend an other player using the Armor of Achilles, preventing them from dying to monsters.
 - Everyone will be notified if a death is prevented.
 
 ### Theseus
