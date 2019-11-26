@@ -85,7 +85,7 @@ function AssignRoles()
 function sendGameMessage(message)
 {
     console.log(message);
-    io.sockets.emit('gameMessage', message);
+    io.emit('gameMessage', message);
 }
 
 function startQuest()
@@ -123,7 +123,8 @@ function nextPlayer()
 
 function restartGame(message)
 {
-    io.sockets.emit('gameEnding', message);
+    io.emit('gameEnding', message);
+    sendGameMessage(message);
     gameStarted = false;
     clients = {};
     activePlayer = 0;
@@ -136,12 +137,14 @@ function checkVictory()
     if (0 === clientKeys.filter((client) => false === clients[client].dead && 'Hero' === clients[client].team).length)
     {
         restartGame('Monsters Win! Please Refresh.');
-        return;
+        return true;
     }//If no heroes alive, monsters win
     if (0 === clientKeys.filter((client) => false === clients[client].dead && 'Monster' === clients[client].team).length)
     {
         restartGame('Heroes Win! Please Refresh.');
+        return true;
     }//If no monsters alive, heroes win
+    return false;//Return false if game ended
 }
 
 function nextTurn()
@@ -180,7 +183,7 @@ function startMonsters()
         if (true === clients[monster].drunk)
         {
             io.to(monster).emit('gameMessage', 'You are drunk and unable to eat anyone');
-            clients[monsters].acted = true;
+            clients[monster].acted = true;
         }//can't act if drunk
         else if (true === clients[monster].seduced)
         {
@@ -196,8 +199,7 @@ function startMonsters()
                 clients[helen].dead = true;
                 clients[helen].isRevealedTeam = true;
                 sendGameMessage(`The ${clients[helen].team}, ${clients[helen].name} is killed by monsters.`);
-                io.sockets.emit('updatePlayerList', clients);
-                checkVictory();
+                io.emit('updatePlayerList', clients);
             }
         }//must attack helen if seduced
         else
@@ -333,15 +335,18 @@ function tallyReveal()
 
 function executeQuest(hero)
 {
-    io.sockets.emit('clearAskReveal', null);
+    io.emit('clearAskReveal', null);
     clients[hero].isRevealedTeam = true;
     clients[voteTarget].dead = true;
     clients[voteTarget].isRevealedTeam = true;
     //Reveal hero and kill target
     sendGameMessage(`${clients[hero].name} slays the ${clients[voteTarget].team}, ${clients[voteTarget].name}`);
-    io.sockets.emit('updatePlayerList', clients);
+    io.emit('updatePlayerList', clients);
     clearRevealVotes();
-    checkVictory();
+    if (true === checkVictory())
+    {
+        return;
+    }
     startOdysseus();
 }
 
@@ -353,7 +358,7 @@ io.on('connection', (socket) =>
         {
             clients[socket.id] = { name, ready: false, dead: false };//Sets name and default of not ready and not dead
             console.log(`${socket.id} set name to ${name}`);
-            io.sockets.emit('lobbyUpdate', clients);//Update all clients that new user joined
+            io.emit('lobbyUpdate', clients);//Update all clients that new user joined
         }//Players can only join if game not in progress
         else
         {
@@ -376,7 +381,7 @@ io.on('connection', (socket) =>
             restartGame('Game Ending, Please Refresh');
             return;
         }//Restart game if last player leaves
-        io.sockets.emit('lobbyUpdate', clients);//Update all clients that user left
+        io.emit('lobbyUpdate', clients);//Update all clients that user left
     });//On socket disconnect
 
     socket.on('lobbyReady', () =>
@@ -395,13 +400,13 @@ io.on('connection', (socket) =>
         if (clientKeys.length === clientKeys.filter((client) => true === clients[client].ready).length && minimumPlayers <= clientKeys.length && maximumPlayers >= clientKeys.length)
         {
             AssignRoles();
-            io.sockets.emit('gameStart', clients);
+            io.emit('gameStart', clients);
             gameStarted = true;
             startQuest();
         }//If all players ready and between 5-9 players, start the game
         else
         {
-            io.sockets.emit('lobbyUpdate', clients);//Update lobby status to all clients
+            io.emit('lobbyUpdate', clients);//Update lobby status to all clients
         }
     });//On user toggling ready
 
@@ -409,7 +414,7 @@ io.on('connection', (socket) =>
     {
         const message = `${clients[socket.id].name}: ${messageText}`;//Message is combination of name and message text
         console.log(message);
-        io.sockets.emit('chatMessage', message);
+        io.emit('chatMessage', message);
     });//When client sents chat, forward to other clients
 
     socket.on('gameMessage', (message) =>
@@ -429,7 +434,7 @@ io.on('connection', (socket) =>
 
     socket.on('voteResult', (result) =>
     {
-        sendGameMessage(`${clients[socket.id].name} votes to ${false === result ? 'not ' : ''} slay ${clients[voteTarget].name}`);
+        sendGameMessage(`${clients[socket.id].name} votes to ${false === result ? 'not ' : ''}slay ${clients[voteTarget].name}`);
         clients[socket.id].vote = result;
         tallyVotes();
     });//When a player votes for a quest
@@ -502,8 +507,11 @@ io.on('connection', (socket) =>
             clients[target].dead = true;
             clients[target].isRevealedTeam = true;
             sendGameMessage(`The ${clients[target].team}, ${clients[target].name} is killed by monsters.`);
-            io.sockets.emit('updatePlayerList', clients);
-            checkVictory();
+            io.emit('updatePlayerList', clients);
+            if (true === checkVictory())
+            {
+                return;
+            }
         }
         clients[socket.id].acted = true;
         const monsters = Object.keys(clients).filter((client) => false === clients[client].dead && 'Monster' === clients[client].team);

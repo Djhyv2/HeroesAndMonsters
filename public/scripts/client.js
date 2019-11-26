@@ -191,7 +191,6 @@ socket.on('clearAskReveal', () =>
 
 function sendDrunk(e)
 {
-    console.log('Sending');
     e.preventDefault();
     socket.emit('drunkTarget', $('input[name="selectedPlayer"]:checked').val());//Sends targeted player name to server
     $('#divPlayerSelect').hide();
@@ -199,14 +198,12 @@ function sendDrunk(e)
 
 socket.on('promptOdysseus', (clients) =>
 {
-    console.log('Prompting');
     activatePlayerSelect(clients, true, 'Select a player to get drunk and skip their turn.');
     $('#formPlayerSelect').unbind().submit((e) => sendDrunk(e));
 });
 
 function sendSeduce(e)
 {
-    console.log('Sending');
     e.preventDefault();
     socket.emit('seduceTarget', $('input[name="selectedPlayer"]:checked').val());//Sends targeted player name to server
     $('#divPlayerSelect').hide();
@@ -214,14 +211,12 @@ function sendSeduce(e)
 
 socket.on('promptHelen', (clients) =>
 {
-    console.log('Prompting');
     activatePlayerSelect(clients, true, 'Select a player to seduce to target you.');
     $('#formPlayerSelect').unbind().submit((e) => sendSeduce(e));
 });
 
 function sendDefend(e)
 {
-    console.log('Sending');
     e.preventDefault();
     socket.emit('defendTarget', $('input[name="selectedPlayer"]:checked').val());//Sends targeted player name to server
     $('#divPlayerSelect').hide();
@@ -229,14 +224,12 @@ function sendDefend(e)
 
 socket.on('promptAchilles', (clients) =>
 {
-    console.log('Prompting');
     activatePlayerSelect(clients, true, "Select a player to defend from monsters, doesn't work on yourself.");
     $('#formPlayerSelect').unbind().submit((e) => sendDefend(e));
 });
 
 function sendKill(e)
 {
-    console.log('Sending');
     e.preventDefault();
     socket.emit('killTarget', $('input[name="selectedPlayer"]:checked').val());//Sends targeted player name to server
     $('#divPlayerSelect').hide();
@@ -244,14 +237,12 @@ function sendKill(e)
 
 socket.on('promptMonster', (clients) =>
 {
-    console.log('Prompting');
     activatePlayerSelect(clients, false, 'Select a player to kill');
     $('#formPlayerSelect').unbind().submit((e) => sendKill(e));
 });
 
 function sendProphecy(e)
 {
-    console.log('Sending');
     e.preventDefault();
     socket.emit('prophecyTarget', $('input[name="selectedPlayer"]:checked').val());//Sends targeted player name to server
     $('#divPlayerSelect').hide();
@@ -259,7 +250,6 @@ function sendProphecy(e)
 
 socket.on('promptTiresias', (clients) =>
 {
-    console.log('Prompting');
     activatePlayerSelect(clients, false, 'Select a player to prophesize their true role');
     $('#formPlayerSelect').unbind().submit((e) => sendProphecy(e));
 });
