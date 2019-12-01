@@ -84,6 +84,80 @@
         </div>
     </div>
 
+    <div class='modal' id='modalRules' tabindex='-1'>
+            <div class='modal-dialog'>
+                <div class='modal-content'>
+                    <div class='modal-header'>
+                        <h5 class='modal-title'>Heroes and Monsters Lobby</h5>
+                        <button type='button' class='close' data-dismiss='modal'>
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class='modal-body'>
+                            <h4>Goals</h4>
+                            <h6>Heroes</h6>
+                            Kill all of the monsters
+                            <h6>Monsters</h6>
+                            Kill all of the heroes
+                            <h4>Gameplay</h4>
+                            The game will continue until there are either no heroes or no monsters left alive<br>
+                            Each turn consists of the following:
+                            <ul>
+                                <li>A period of deliberation</li>
+                                <li>The active player choses a target for a quest</li>
+                                <ul>
+                                    <li>A vote happens to send a hero on a quest to kill that target</li>
+                                    <li>This requires atleast half of all players vote in favor</li>
+                                    <li>If the vote passes or ties, one of the people who voted for the quest must reveal they are a hero and agree to go on the quest</li>
+                                    <li>If both conditions are met the target is killed</li>
+                                    <li>A player killed by a quest has their team revealed</li>
+                                    <li>If the vote fails, move to the next active player and keep selecting targets and voting until a quest is approved, a hero doesn't have to reveal themself to proceed</li>
+                                </ul>
+                                <li>Odysseus will act</li>
+                                <li>Helen will act</li>
+                                <li>Achilles will act</li>
+                                <li>Minotaur will act</li>
+                                <li>Polyphemus will act</li>
+                                <li>Medusa will act</li>
+                                <li>Tiersias will act</li>
+                                <li>The active player will rotate</li>
+                            </ul>
+                            <h4>Setup</h4>
+                            <ul>
+                                <li>Add players in the following order: Odysseus, Achilles, Minotaur, Polyphemus, Tiresias, Helen, Theseus, Medusa, Deadalus</li>
+                                <li>Each player will be informed of their own roles</li>
+                                <li>Monsters will be informed of who the other monsters are</li>
+                            </ul>
+                            <h4>Roles</h4>
+                            <h5>Heroes</h5>
+                            <h6>Odysseus</h6>
+                            Once per turn can get another character drunk, causing them to skip their turn<br>
+                            Odysseus cannot get Tiersias drunk<br>
+                            The target will be notified if they were were gotten drunk
+                            <h6>Achilles</h6>
+                            Once per turn can defend an other player using the Armor of Achilles, preventing them from dying to monsters<br>
+                            Everyone will be notified if a death is prevented
+                            <h6>Theseus</h6>
+                            No abilities
+                            <h5>Monsters</h5>
+                            Once per turn can kill a player<br>
+                            Everyone will be notified if a player is killed by a monster<br>
+                            A player killed by a monster has their team revealed
+                            <h5>Civilians</h5>
+                            <h6>Tiersias</h6>
+                            Once per turn can prophesize, revealing what character another player has
+                            <h6>Helen</h6>
+                            Once per turn can seduce a player, if that player had an ability requiring a target, it instead targets Helen<br>
+                            Helen cannot seduce Tiresias<br>
+                            <h6>Deadalus</h6>
+                            No abilities
+                    </div>
+                    <div class='modal-footer'>
+                    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 
     <div class='row m-auto'>
         <div class='col-md-4 col-sm-12 mb-2'>
@@ -97,28 +171,35 @@
             <ul class='list-group w-100 collapse show' id='listPlayers'>
             </ul>
         </div>
-        <div class='col-md-8 col-sm-12 hidden mb-2' id='divPlayerSelect'>
-            <script id='playerSelectTemplate' type='template'>
-                <div class='form-check'>
-                    <input class='form-check-input' type='radio' name='selectedPlayer' value='{{id}}' required>
-                    <label class='form-check-label'>{{name}}</label>
+        <div class='col-md-8 col-sm-12 mb-2'>
+            <div class='text-right'>
+                <button type='button' class='btn btn-info mb-2' id='btnRules' data-toggle='modal' data-target='#modalRules'>Rules</button>
+            </div>
+            <div class='hidden' id='divPlayerSelect'>
+                <script id='playerSelectTemplate' type='template'>
+                    <div class='form-check'>
+                        <input class='form-check-input' type='radio' name='selectedPlayer' value='{{id}}' required>
+                        <label class='form-check-label'>{{name}}</label>
+                    </div>
+                </script>
+                <form id='formPlayerSelect' class='border p-2'>
+                    <h4 id='lblPlayerSelect'></h4>
+                    <div id='divPlayerOptions'>
+                        
+                    </div>
+                    <button type='submit' class='btn btn-primary mt-2'>Target</button>
+                </form>
+            </div>
+            <div class='hidden' id='divVote'>
+                <h4 id='lblVoteTarget'></h4>
+                <div class='row m-auto'>
+                    <button type='button' class='btn btn-success mr-2' id='btnVoteYay'>Yay</button>
+                    <button type='button' class='btn btn-danger' id='btnVoteNay'>Nay</button>
                 </div>
-            </script>
-            <form id='formPlayerSelect' class='border p-2'>
-                <h4 id='lblPlayerSelect'></h4>
-                <div id='divPlayerOptions'>
-                    
-                </div>
-                <button type='submit' class='btn btn-primary mt-2'>Target</button>
-            </form>
-        </div>
-        <div class='col-md-8 col-sm-12 hidden border mb-2' id='divVote'>
-            <h4 id='lblVoteTarget'></h4>
-            <div class='row m-auto'>
-                <button type='button' class='btn btn-success mr-2' id='btnVoteYay'>Yay</button>
-                <button type='button' class='btn btn-danger' id='btnVoteNay'>Nay</button>
             </div>
         </div>
+        
+        
     </div>
     <div class='d-flex flex-column'>
         <div class='flex-fill overflow-auto border' id='divChatLog'>

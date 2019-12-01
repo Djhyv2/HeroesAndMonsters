@@ -131,6 +131,12 @@ function restartGame(message)
     voteTarget = null;
 }
 
+app.get('/restart', (req, res) =>
+{
+    restartGame('Game forcibly restarted');
+    res.redirect('/');
+});//Allows a forced way to restart a game
+
 function checkVictory()
 {
     const clientKeys = Object.keys(clients);
